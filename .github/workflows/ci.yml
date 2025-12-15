@@ -123,3 +123,4 @@ jobs:
       id-token: write
     with:
       image_name: daniel-butler-irl/coinnode
+      tag: ${{ needs.tag.outputs.new_tag }}
