@@ -1,1 +1,29 @@
-../../ci/release.yml
+# Reusable Workflow: Create Release
+# Called via: uses: owner/repo/.github/workflows/release.yml@v1.0.0
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      registry:
+        description: 'Container registry'
+        type: string
+        default: 'ghcr.io'
+      image_name:
+        description: 'Image name (owner/repo)'
+        type: string
+        required: true
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
