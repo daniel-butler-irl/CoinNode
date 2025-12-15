@@ -30,6 +30,10 @@ on:
         description: 'Vulnerability severities to fail on'
         type: string
         default: 'CRITICAL,HIGH'
+      upload_sarif:
+        description: 'Upload scan results to GitHub Security tab (requires public repo or GHAS)'
+        type: boolean
+        default: false
     outputs:
       digest:
         description: 'Image digest'
@@ -136,7 +140,7 @@ jobs:
 
       - name: Upload scan results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
-        if: always() && hashFiles('trivy-results.sarif') != ''
+        if: always() && inputs.upload_sarif && hashFiles('trivy-results.sarif') != ''
         with:
           sarif_file: 'trivy-results.sarif'
 
