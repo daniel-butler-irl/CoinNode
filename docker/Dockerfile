@@ -9,7 +9,7 @@
 # Update digest periodically via: skopeo inspect docker://registry.access.redhat.com/ubi9/ubi-minimal
 # =============================================================================
 ARG UBI_IMAGE=registry.access.redhat.com/ubi9/ubi-minimal
-ARG UBI_DIGEST=sha256:dfc52e9c80bc87a69153bbb5684a2ea8f0ebf280ff28f0ded8ba9c9ceff19203
+ARG UBI_DIGEST=sha256:6fc28bcb6776e387d7a35a2056d9d2b985dc4e26031e98a2bd35a7137cd6fd71
 
 # =============================================================================
 # Stage 1: Download and Verify Bitcoin Core
