@@ -34,6 +34,10 @@ on:
         description: 'Upload scan results to GitHub Security tab (requires public repo or GHAS)'
         type: boolean
         default: false
+      attest:
+        description: 'Create build provenance attestation (requires public repo or GitHub Enterprise)'
+        type: boolean
+        default: false
     outputs:
       digest:
         description: 'Image digest'
@@ -158,7 +162,7 @@ jobs:
   attest:
     name: Attestation
     needs: [build, scan]
-    if: ${{ inputs.push }}
+    if: inputs.push && inputs.attest
     runs-on: ubuntu-latest
     permissions:
       id-token: write
