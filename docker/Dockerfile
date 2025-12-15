@@ -1,13 +1,20 @@
 # =============================================================================
 # Bitcoin Core 29.0 - Secure Container Image
-# Base: Red Hat UBI 9 Minimal
+# Base: Red Hat UBI 9 Minimal (pinned digest for reproducibility)
 # =============================================================================
+
+# =============================================================================
+# Base Image Configuration
+# Pin to specific digest for reproducible builds and supply chain security
+# Update digest periodically via: skopeo inspect docker://registry.access.redhat.com/ubi9/ubi-minimal
+# =============================================================================
+ARG UBI_IMAGE=registry.access.redhat.com/ubi9/ubi-minimal
+ARG UBI_DIGEST=sha256:dfc52e9c80bc87a69153bbb5684a2ea8f0ebf280ff28f0ded8ba9c9ceff19203
 
 # =============================================================================
 # Stage 1: Download and Verify Bitcoin Core
 # =============================================================================
-ARG UBI_VERSION=9
-FROM registry.access.redhat.com/ubi${UBI_VERSION}/ubi-minimal AS verifier
+FROM ${UBI_IMAGE}@${UBI_DIGEST} AS verifier
 
 ARG BITCOIN_VERSION=29.0
 ARG TARGETARCH
@@ -66,7 +73,9 @@ RUN set -eux; \
 # =============================================================================
 # Stage 2: Prepare Runtime Files
 # =============================================================================
-FROM registry.access.redhat.com/ubi${UBI_VERSION}/ubi-minimal AS preparer
+ARG UBI_IMAGE
+ARG UBI_DIGEST
+FROM ${UBI_IMAGE}@${UBI_DIGEST} AS preparer
 
 COPY --from=verifier /tmp/bitcoin/bitcoin /tmp/bitcoin
 
@@ -79,7 +88,9 @@ RUN mkdir -p /opt/bitcoin/bin && \
 # =============================================================================
 # Stage 3: Final Runtime Image
 # =============================================================================
-FROM registry.access.redhat.com/ubi${UBI_VERSION}/ubi-minimal AS runtime
+ARG UBI_IMAGE
+ARG UBI_DIGEST
+FROM ${UBI_IMAGE}@${UBI_DIGEST} AS runtime
 
 ARG BITCOIN_UID=1000
 ARG BITCOIN_GID=1000
