@@ -1,0 +1,102 @@
+# Pretty standard set of pre-commits I use
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+        exclude: chart/|metadata.yaml|tests/|examples/charts/
+        args:
+          - --allow-multiple-documents
+      - id: check-json
+        types: [file]
+        files: \.(json|releaserc)$
+      - id: end-of-file-fixer
+        exclude: .svg
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        description: Forces to replace line ending by the UNIX 'lf' character.
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.14.0
+    hooks:
+      - id: hadolint
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.104.0
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+        # only scan directories which has provider config in them due to limitation https://github.com/hashicorp/terraform/issues/28490
+        files: ^examples/|^patterns/|^solutions/
+        args:
+          - --hook-config=--retry-once-with-cleanup=true
+          - --tf-init-args=-upgrade
+      - id: terraform_tflint
+        args:
+          - --args=--enable-rule=terraform_unused_declarations
+          - --args=--enable-rule=terraform_deprecated_index
+          - --args=--enable-rule=terraform_comment_syntax
+          - --args=--enable-rule=terraform_documented_outputs
+          - --args=--enable-rule=terraform_documented_variables
+          - --args=--enable-rule=terraform_typed_variables
+          - --args=--enable-rule=terraform_naming_convention
+          - --args=--enable-rule=terraform_required_version
+          - --args=--enable-rule=terraform_required_providers
+          - --args=--enable-rule=terraform_unused_required_providers
+          - --args=--enable-rule=terraform_standard_module_structure
+          - --args=--enable-rule=terraform_workspace_remote
+          - --args=--enable-rule=terraform_module_version
+          - --args=--enable-rule=terraform_module_pinned_source
+          - --args=--enable-rule=terraform_map_duplicate_keys
+          - --args=--enable-rule=terraform_empty_list_equality
+          - --args=--enable-rule=terraform_deprecated_lookup
+          - --args=--enable-rule=terraform_deprecated_interpolation
+        exclude: dynamic_values/ # Do not run tflint in dynamic_folders directory (temp solution for SLZ modules). Internal issue created to track better solution.
+      - id: terraform_trivy
+        args:
+          - --args=--skip-files="**/.terraform/**/*"
+          - --args=--skip-files="**/examples/**/*.yaml"
+          - --args=--skip-files="**/examples/**/*.yml"
+          - --args=--skip-files="**/helm-charts/**/*"
+          - --args=--skip-files="**/chart/**/*"
+          # workaround for https://github.com/antonbabenko/pre-commit-terraform/issues/833
+          - --args=--skip-files="**/scripts/*.yaml"
+          - --args=--skip-files="**/tests/**/*"
+          - --args=--skip-files="common-dev-assets/**/*"
+          # workaround for https://github.com/antonbabenko/pre-commit-terraform/issues/691
+          - --hook-config=--parallelism-limit=1
+  # checkov (does not require checkov to be installed locally to run)
+  - repo: https://github.com/bridgecrewio/checkov.git
+    rev: 3.2.495
+    hooks:
+      - id: checkov
+  - repo: https://github.com/syntaqx/git-hooks
+    rev: v0.0.18
+    hooks:
+      - id: forbid-binary
+        exclude: .png|.jpg|.pdf|.sdumodel|.tar.gz
+      - id: shellcheck
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+  # ruff - replaces flake8, isort, and black
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.9
+    hooks:
+      - id: ruff
+        args:
+          - --fix
+          - --unsafe-fixes
+          - --line-length=88
+          - --select=E,F,I,W,UP,B,C4
+          - --ignore=E203,E501,B007
+      - id: ruff-format
+        args:
+          - --line-length=88
+  - repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.30
+    hooks:
+      - id: helmlint
