@@ -40,7 +40,7 @@ jobs:
   release:
     name: Release
     needs: [build]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && !failure() && !cancelled() && startsWith(github.ref, 'refs/tags/v')
     uses: daniel-butler-irl/CoinNode/.github/workflows/release.yml@main
     permissions:
       contents: write
