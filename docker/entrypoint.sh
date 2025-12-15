@@ -12,7 +12,7 @@ BITCOIN_NETWORK="${BITCOIN_NETWORK:-mainnet}"
 # Signal handler for graceful shutdown
 # Uses bitcoin-cli stop for clean database shutdown
 # -----------------------------------------------------------------------------
-# shellcheck disable=SC2329  # Function is invoked via trap
+# shellcheck disable=SC2317,SC2329  # Function is invoked indirectly via trap
 shutdown_handler() {
     echo "[entrypoint] Received shutdown signal"
     if [ -n "${BITCOIND_PID:-}" ] && kill -0 "$BITCOIND_PID" 2>/dev/null; then

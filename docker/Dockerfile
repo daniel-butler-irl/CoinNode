@@ -21,6 +21,7 @@ ARG TARGETARCH
 
 # Install verification tools
 # Note: curl-minimal is pre-installed in UBI minimal, so we don't need to install curl
+# hadolint ignore=DL3041
 RUN microdnf install -y \
         gnupg2 \
         tar \
@@ -39,6 +40,7 @@ COPY builder-keys/*.gpg /tmp/builder-keys/
 RUN gpg --batch --import /tmp/builder-keys/*.gpg
 
 # Download and verify Bitcoin Core
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN set -eux; \
     if [ -n "${TARGETARCH:-}" ]; then \
       case "${TARGETARCH}" in \
