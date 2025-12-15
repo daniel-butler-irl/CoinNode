@@ -12,11 +12,12 @@ BITCOIN_NETWORK="${BITCOIN_NETWORK:-mainnet}"
 # Signal handler for graceful shutdown
 # Uses bitcoin-cli stop for clean database shutdown
 # -----------------------------------------------------------------------------
+# shellcheck disable=SC2329  # Function is invoked via trap
 shutdown_handler() {
     echo "[entrypoint] Received shutdown signal"
     if [ -n "${BITCOIND_PID:-}" ] && kill -0 "$BITCOIND_PID" 2>/dev/null; then
         echo "[entrypoint] Stopping bitcoind gracefully via bitcoin-cli..."
-        bitcoin-cli -datadir="${BITCOIN_DATA}" ${NETWORK_FLAG:-} stop 2>/dev/null || true
+        bitcoin-cli -datadir="${BITCOIN_DATA}" "${NETWORK_FLAG:-}" stop 2>/dev/null || true
         echo "[entrypoint] Waiting for bitcoind to exit..."
         wait "$BITCOIND_PID" 2>/dev/null || true
     fi
@@ -25,7 +26,7 @@ shutdown_handler() {
 }
 
 # Trap signals for graceful shutdown
-trap 'shutdown_handler' SIGTERM SIGINT SIGHUP
+trap 'shutdown_handler' TERM INT HUP
 
 # -----------------------------------------------------------------------------
 # Determine network configuration
