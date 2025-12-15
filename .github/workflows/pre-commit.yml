@@ -26,6 +26,12 @@ jobs:
           wget -q https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -O /usr/local/bin/hadolint
           chmod +x /usr/local/bin/hadolint
 
+      - name: Install actionlint
+        run: |
+          wget -q https://github.com/rhysd/actionlint/releases/download/v1.7.4/actionlint_1.7.4_linux_amd64.tar.gz -O /tmp/actionlint.tar.gz
+          tar -xzf /tmp/actionlint.tar.gz -C /usr/local/bin actionlint
+          chmod +x /usr/local/bin/actionlint
+
       - name: Cache pre-commit environments
         uses: actions/cache@v4
         with:

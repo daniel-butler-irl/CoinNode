@@ -100,3 +100,7 @@ repos:
     rev: v0.1.30
     hooks:
       - id: helmlint
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.4
+    hooks:
+      - id: actionlint
