@@ -124,3 +124,16 @@ jobs:
     with:
       image_name: daniel-butler-irl/coinnode
       tag: ${{ needs.tag.outputs.new_tag }}
+
+  # Stage 5: Deploy and verify in ephemeral Kind cluster
+  deploy-test:
+    name: Deploy & Verify
+    needs: [release, tag]
+    if: always() && !failure() && !cancelled() && needs.release.result == 'success'
+    uses: daniel-butler-irl/CoinNode/.github/workflows/cd-kind.yml@main
+    permissions:
+      contents: read
+      packages: read
+    with:
+      version: ${{ needs.tag.outputs.new_tag }}
+      verification_duration: 5

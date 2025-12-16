@@ -1,0 +1,238 @@
+# CD Workflow: Kind Deployment Test
+# Deploys and verifies the application in an ephemeral Kind cluster
+# Can be triggered manually or called from CI pipeline after release
+name: CD - Kind Deployment Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to deploy (e.g., v0.1.0, latest, sha-abc123)'
+        required: true
+        type: string
+      verification_duration:
+        description: 'Duration to run verification (minutes)'
+        required: false
+        type: number
+        default: 5
+  workflow_call:
+    inputs:
+      version:
+        description: 'Release version to deploy'
+        required: true
+        type: string
+      verification_duration:
+        description: 'Duration to run verification (minutes)'
+        required: false
+        type: number
+        default: 5
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: daniel-butler-irl/coinnode
+  KIND_VERSION: v0.24.0
+  CLUSTER_NAME: coinnode-test
+
+jobs:
+  deploy-test:
+    name: Deploy to Kind Cluster
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version }}
+          fetch-depth: 0
+
+      - name: Validate version input
+        run: |
+          if ! git rev-parse --verify "${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "ERROR: Version '${{ inputs.version }}' does not exist"
+            exit 1
+          fi
+          echo "Deploying version: ${{ inputs.version }}"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify image exists in registry
+        run: |
+          IMAGE="${REGISTRY}/${IMAGE_NAME}:${{ inputs.version }}"
+          echo "Verifying image: ${IMAGE}"
+
+          if ! docker manifest inspect "${IMAGE}" > /dev/null 2>&1; then
+            echo "ERROR: Image ${IMAGE} not found in registry"
+            echo "Available tags: https://github.com/daniel-butler-irl/coinnode/pkgs/container/coinnode"
+            exit 1
+          fi
+
+          echo "Image verified: ${IMAGE}"
+
+      - name: Install Kind
+        run: |
+          curl -Lo ./kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind version
+
+      - name: Create Kind cluster
+        run: |
+          cat <<EOF | kind create cluster --name "${CLUSTER_NAME}" --config=-
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+          EOF
+
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Pull and load image into Kind
+        run: |
+          IMAGE="${REGISTRY}/${IMAGE_NAME}:${{ inputs.version }}"
+
+          docker pull "${IMAGE}"
+          kind load docker-image "${IMAGE}" --name "${CLUSTER_NAME}"
+
+          echo "Image loaded into Kind cluster"
+
+      - name: Patch manifests with release image
+        run: |
+          IMAGE="${REGISTRY}/${IMAGE_NAME}:${{ inputs.version }}"
+
+          sed -i "s|image: bitcoin-node:local|image: ${IMAGE}|" \
+            orchestration/statefulset.yaml
+
+          echo "=== Patched StatefulSet ==="
+          grep -A2 "image:" orchestration/statefulset.yaml
+
+      - name: Deploy manifests
+        run: |
+          echo "Deploying Kubernetes manifests..."
+          kubectl apply -f orchestration/
+
+          echo "=== Deployed Resources ==="
+          kubectl get all
+
+      - name: Wait for rollout
+        run: |
+          echo "Waiting for StatefulSet rollout..."
+          kubectl rollout status statefulset/bitcoin-node --timeout=300s
+
+      - name: Verify pod readiness
+        run: |
+          echo "Waiting for pod to be ready..."
+          kubectl wait --for=condition=Ready pod/bitcoin-node-0 --timeout=180s
+
+          echo "=== Pod Status ==="
+          kubectl get pod bitcoin-node-0 -o wide
+
+      - name: Run active verification
+        run: |
+          DURATION_SECS=$((${{ inputs.verification_duration }} * 60))
+          END_TIME=$(($(date +%s) + DURATION_SECS))
+          CHECK_INTERVAL=30
+          CHECK_COUNT=0
+          FAILED_CHECKS=0
+
+          echo "Starting ${{ inputs.verification_duration }}-minute verification window"
+          echo "End time: $(date -d @${END_TIME} 2>/dev/null || date -r ${END_TIME})"
+
+          while [ "$(date +%s)" -lt "$END_TIME" ]; do
+            CHECK_COUNT=$((CHECK_COUNT + 1))
+            echo ""
+            echo "=== Health check #${CHECK_COUNT} at $(date) ==="
+
+            # Check 1: Pod status
+            POD_PHASE=$(kubectl get pod bitcoin-node-0 -o jsonpath='{.status.phase}')
+            echo "Pod phase: ${POD_PHASE}"
+            if [ "$POD_PHASE" != "Running" ]; then
+              echo "ERROR: Pod phase is ${POD_PHASE}, expected Running"
+              FAILED_CHECKS=$((FAILED_CHECKS + 1))
+            fi
+
+            # Check 2: Container ready
+            READY=$(kubectl get pod bitcoin-node-0 -o jsonpath='{.status.containerStatuses[0].ready}')
+            echo "Container ready: ${READY}"
+            if [ "$READY" != "true" ]; then
+              echo "ERROR: Container not ready"
+              FAILED_CHECKS=$((FAILED_CHECKS + 1))
+            fi
+
+            # Check 3: Restart count
+            RESTARTS=$(kubectl get pod bitcoin-node-0 -o jsonpath='{.status.containerStatuses[0].restartCount}')
+            echo "Restart count: ${RESTARTS}"
+            if [ "$RESTARTS" -gt 0 ]; then
+              echo "WARNING: Container has restarted ${RESTARTS} times"
+            fi
+
+            # Check 4: RPC health check
+            echo "Running RPC health check..."
+            if kubectl exec bitcoin-node-0 -- \
+              bitcoin-cli -regtest -datadir=/home/bitcoin/.bitcoin getblockchaininfo > /tmp/blockchain-info.json 2>&1; then
+              echo "RPC health check: PASSED"
+              cat /tmp/blockchain-info.json
+            else
+              echo "ERROR: RPC health check failed"
+              FAILED_CHECKS=$((FAILED_CHECKS + 1))
+            fi
+
+            # Fail fast if too many consecutive failures
+            if [ "$FAILED_CHECKS" -gt 3 ]; then
+              echo ""
+              echo "ERROR: Too many failed checks (${FAILED_CHECKS}), aborting verification"
+              exit 1
+            fi
+
+            # Reset failed checks if this iteration passed
+            if [ "$POD_PHASE" = "Running" ] && [ "$READY" = "true" ]; then
+              FAILED_CHECKS=0
+            fi
+
+            sleep $CHECK_INTERVAL
+          done
+
+          echo ""
+          echo "=== Verification Summary ==="
+          echo "Total checks: ${CHECK_COUNT}"
+          echo "Final status: PASSED"
+
+      - name: Collect debug logs
+        if: failure()
+        run: |
+          echo "=== Collecting debug information ==="
+
+          echo ""
+          echo "=== Pod Description ==="
+          kubectl describe pod bitcoin-node-0 || true
+
+          echo ""
+          echo "=== Pod Logs ==="
+          kubectl logs bitcoin-node-0 --tail=200 || true
+
+          echo ""
+          echo "=== Events ==="
+          kubectl get events --sort-by='.lastTimestamp' || true
+
+          echo ""
+          echo "=== All Resources ==="
+          kubectl get all -o wide || true
+
+          echo ""
+          echo "=== PVC Status ==="
+          kubectl get pvc || true
+
+      - name: Delete Kind cluster
+        if: always()
+        run: |
+          echo "Cleaning up Kind cluster..."
+          kind delete cluster --name "${CLUSTER_NAME}"
+          echo "Cleanup complete"
