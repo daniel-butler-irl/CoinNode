@@ -4,7 +4,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-yaml
-        exclude: chart/|metadata.yaml|tests/|examples/charts/
+        exclude: chart/|metadata.yaml|tests/|examples/charts/|orchestration/charts/.*/templates/
         args:
           - --allow-multiple-documents
       - id: check-json

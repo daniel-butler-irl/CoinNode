@@ -1,0 +1,233 @@
+# =============================================================================
+# Bitcoin Node Helm Chart - Default Values
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Image Configuration
+# -----------------------------------------------------------------------------
+image:
+  repository: ghcr.io/daniel-butler-irl/coinnode
+  # Use specific version tags in production (not "latest")
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# -----------------------------------------------------------------------------
+# Bitcoin Network Configuration
+# -----------------------------------------------------------------------------
+bitcoin:
+  # Network: mainnet, testnet, regtest, signet
+  network: mainnet
+
+  # RPC Configuration
+  rpc:
+    enabled: true
+    user: "bitcoinrpc"
+    # Password will be auto-generated if not specified
+    # Set this in a separate values file or via --set for production
+    password: ""
+    # Allow RPC from any IP (filtered by NetworkPolicy)
+    allowip: "0.0.0.0/0"
+
+  # Additional bitcoin.conf settings
+  config: |
+    # Reduce memory usage (MB)
+    dbcache=450
+    # Limit connections to preserve resources
+    maxconnections=40
+    # Disable wallet functionality (node-only mode)
+    disablewallet=1
+    # Prune mode: 0 = full node, >550 = prune to N MiB
+    prune=0
+    # Transaction index (required for some applications)
+    txindex=0
+    # Bind to all interfaces
+    bind=0.0.0.0
+
+# -----------------------------------------------------------------------------
+# StatefulSet Configuration
+# -----------------------------------------------------------------------------
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Update strategy for StatefulSet
+updateStrategy:
+  type: RollingUpdate
+
+# Pod management policy: OrderedReady or Parallel
+podManagementPolicy: OrderedReady
+
+# Termination grace period (bitcoin-cli stop needs time for clean shutdown)
+terminationGracePeriodSeconds: 600
+
+# -----------------------------------------------------------------------------
+# Resource Requests and Limits
+# -----------------------------------------------------------------------------
+resources:
+  requests:
+    memory: "2Gi"
+    cpu: "500m"
+  limits:
+    memory: "8Gi"
+    cpu: "4"
+
+# -----------------------------------------------------------------------------
+# Persistent Volume Configuration (Rook/Ceph)
+# -----------------------------------------------------------------------------
+persistence:
+  enabled: true
+  # Rook/Ceph StorageClass - ensure this exists in your cluster
+  storageClass: "rook-ceph-block"
+  accessModes:
+    - ReadWriteOnce
+  # Storage size: Mainnet ~700Gi, Testnet ~50Gi, Regtest ~1Gi
+  size: 700Gi
+  # Annotations for the PVC
+  annotations: {}
+
+# -----------------------------------------------------------------------------
+# Probes Configuration
+# -----------------------------------------------------------------------------
+# Startup probe: Allow extremely long initial sync (up to 7 days for mainnet)
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 60
+  periodSeconds: 60
+  timeoutSeconds: 30
+  # 60s * 10080 = 7 days maximum startup time
+  failureThreshold: 10080
+  successThreshold: 1
+
+# Liveness probe: Is the process alive and responsive?
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
+  successThreshold: 1
+
+# Readiness probe: Is the node ready to serve traffic?
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+  successThreshold: 1
+
+# -----------------------------------------------------------------------------
+# Security Context (Pod Security Standards: Restricted)
+# -----------------------------------------------------------------------------
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: "OnRootMismatch"
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# -----------------------------------------------------------------------------
+# Service Configuration
+# -----------------------------------------------------------------------------
+service:
+  # RPC Service (internal only)
+  rpc:
+    type: ClusterIP
+    port: null  # Auto-detected from network
+    annotations: {}
+
+  # P2P Service (external access via NodePort)
+  p2p:
+    type: NodePort
+    port: null  # Auto-detected from network
+    # Set specific nodePort or leave null for auto-assignment
+    nodePort: null
+    annotations: {}
+
+# -----------------------------------------------------------------------------
+# Network Policies
+# -----------------------------------------------------------------------------
+networkPolicy:
+  enabled: true
+  # Allow P2P ingress from anywhere (required for blockchain connectivity)
+  allowP2PIngress: true
+  # Restrict RPC to specific namespaces
+  rpcAllowedNamespaces:
+    - default
+  # Additional pod labels that can access RPC
+  rpcAllowedPodLabels: {}
+  # Allow DNS resolution
+  allowDNS: true
+  # Allow P2P egress to internet
+  allowP2PEgress: true
+
+# -----------------------------------------------------------------------------
+# Pod Disruption Budget
+# -----------------------------------------------------------------------------
+podDisruptionBudget:
+  enabled: false
+  # Only relevant for multi-replica setups
+  minAvailable: 1
+  # maxUnavailable: 1
+
+# -----------------------------------------------------------------------------
+# Pod Scheduling
+# -----------------------------------------------------------------------------
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Pod anti-affinity (useful if running multiple nodes)
+podAntiAffinity:
+  enabled: true
+  # soft = preferredDuringSchedulingIgnoredDuringExecution
+  # hard = requiredDuringSchedulingIgnoredDuringExecution
+  type: soft
+  topologyKey: kubernetes.io/hostname
+
+# Topology spread constraints
+topologySpreadConstraints: []
+
+# Priority class name
+priorityClassName: ""
+
+# -----------------------------------------------------------------------------
+# Service Account
+# -----------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  # Disable token auto-mount for security
+  automountServiceAccountToken: false
+
+# -----------------------------------------------------------------------------
+# Pod Annotations and Labels
+# -----------------------------------------------------------------------------
+podAnnotations: {}
+podLabels: {}
+
+# -----------------------------------------------------------------------------
+# Extra Volumes and Volume Mounts
+# -----------------------------------------------------------------------------
+extraVolumes: []
+extraVolumeMounts: []

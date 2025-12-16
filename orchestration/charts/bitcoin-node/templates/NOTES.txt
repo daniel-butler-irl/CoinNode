@@ -1,0 +1,87 @@
+===============================================================================
+  Bitcoin Core {{ .Chart.AppVersion }} - {{ .Values.bitcoin.network | upper }}
+===============================================================================
+
+Your Bitcoin node has been deployed!
+
+Network: {{ .Values.bitcoin.network }}
+Release: {{ .Release.Name }}
+
+-------------------------------------------------------------------------------
+IMPORTANT: Initial Blockchain Sync
+-------------------------------------------------------------------------------
+The Bitcoin blockchain requires significant time to sync:
+  - Mainnet: 3-7 days (depending on hardware and network)
+  - Testnet: 12-24 hours
+  - Regtest: Immediate (local testing only)
+
+Monitor sync progress:
+  kubectl exec -it {{ include "bitcoin-node.fullname" . }}-0 -- \
+    bitcoin-cli {{ include "bitcoin-node.networkFlag" . }} getblockchaininfo
+
+-------------------------------------------------------------------------------
+RPC Access (Internal)
+-------------------------------------------------------------------------------
+The RPC service is only accessible within the cluster:
+
+  Service: {{ include "bitcoin-node.fullname" . }}-rpc
+  Port: {{ include "bitcoin-node.rpcPort" . }}
+
+From within the cluster:
+  bitcoin-cli -rpcconnect={{ include "bitcoin-node.fullname" . }}-rpc \
+    -rpcport={{ include "bitcoin-node.rpcPort" . }} \
+    -rpcuser={{ .Values.bitcoin.rpc.user }} \
+    -rpcpassword=<password> \
+    getblockchaininfo
+
+Get the RPC password:
+  kubectl get secret {{ include "bitcoin-node.fullname" . }}-rpc \
+    -o jsonpath='{.data.rpc-password}' | base64 -d
+
+-------------------------------------------------------------------------------
+P2P Access (External)
+-------------------------------------------------------------------------------
+{{- if eq .Values.service.p2p.type "NodePort" }}
+P2P is exposed via NodePort:
+  Port: {{ include "bitcoin-node.p2pPort" . }}
+
+Get the NodePort:
+  kubectl get svc {{ include "bitcoin-node.fullname" . }}-p2p \
+    -o jsonpath='{.spec.ports[0].nodePort}'
+{{- else if eq .Values.service.p2p.type "LoadBalancer" }}
+P2P is exposed via LoadBalancer:
+  kubectl get svc {{ include "bitcoin-node.fullname" . }}-p2p \
+    -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+{{- else }}
+P2P is internal only (ClusterIP). External peers cannot connect.
+{{- end }}
+
+-------------------------------------------------------------------------------
+Useful Commands
+-------------------------------------------------------------------------------
+# Check pod status
+kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+# View logs
+kubectl logs -f {{ include "bitcoin-node.fullname" . }}-0
+
+# Check blockchain sync status
+kubectl exec {{ include "bitcoin-node.fullname" . }}-0 -- \
+  bitcoin-cli {{ include "bitcoin-node.networkFlag" . }} getblockchaininfo | grep -E 'blocks|headers|verificationprogress'
+
+# Get peer information
+kubectl exec {{ include "bitcoin-node.fullname" . }}-0 -- \
+  bitcoin-cli {{ include "bitcoin-node.networkFlag" . }} getpeerinfo | grep -E 'addr|subver'
+
+# Check persistent volume
+kubectl get pvc -l app.kubernetes.io/instance={{ .Release.Name }}
+
+-------------------------------------------------------------------------------
+Storage
+-------------------------------------------------------------------------------
+Persistent Volume Claim: data-{{ include "bitcoin-node.fullname" . }}-0
+Storage Class: {{ .Values.persistence.storageClass }}
+Size: {{ .Values.persistence.size }}
+
+WARNING: The blockchain data is stored on this PVC. Deleting the PVC will
+require a full resync which can take days.

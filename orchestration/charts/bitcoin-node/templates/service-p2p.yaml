@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bitcoin-node.fullname" . }}-p2p
+  labels:
+    {{- include "bitcoin-node.labels" . | nindent 4 }}
+  {{- with .Values.service.p2p.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.p2p.type }}
+  {{- if and (eq .Values.service.p2p.type "LoadBalancer") .Values.service.p2p.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.service.p2p.loadBalancerIP }}
+  {{- end }}
+  {{- if and (eq .Values.service.p2p.type "LoadBalancer") .Values.service.p2p.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ .Values.service.p2p.externalTrafficPolicy }}
+  {{- end }}
+  ports:
+    - name: p2p
+      port: {{ include "bitcoin-node.p2pPort" . }}
+      targetPort: p2p
+      protocol: TCP
+      {{- if and (eq .Values.service.p2p.type "NodePort") .Values.service.p2p.nodePort }}
+      nodePort: {{ .Values.service.p2p.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "bitcoin-node.selectorLabels" . | nindent 4 }}
