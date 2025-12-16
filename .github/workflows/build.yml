@@ -38,6 +38,10 @@ on:
         description: 'Create build provenance attestation (requires public repo or GitHub Enterprise)'
         type: boolean
         default: true
+      version:
+        description: 'Semver version tag to apply (e.g., v1.2.3). If provided, adds version tags to the image.'
+        type: string
+        required: false
     outputs:
       digest:
         description: 'Image digest'
@@ -80,6 +84,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
 
       - name: Build and push image
         id: build

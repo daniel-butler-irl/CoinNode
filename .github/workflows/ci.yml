@@ -20,30 +20,14 @@ jobs:
     permissions:
       contents: read
 
-  # Stage 2: Build, scan, and push container image
-  build:
-    name: Build & Push
+  # Stage 2: Calculate next version (only on main branch)
+  version:
+    name: Calculate Version
     needs: [pre-commit]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-    uses: daniel-butler-irl/CoinNode/.github/workflows/build.yml@v0.2.0
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-      attestations: write
-      security-events: write
-      actions: read
-    with:
-      image_name: daniel-butler-irl/coinnode
-
-  # Stage 3: Auto-tag on main branch pushes
-  tag:
-    name: Create Tag
-    needs: [build]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
     steps:
@@ -104,67 +88,58 @@ jobs:
           echo "New tag: $new_tag"
           echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Create and push tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ steps.bump.outputs.new_tag }}" -m "Release ${{ steps.bump.outputs.new_tag }}"
-          git push origin "${{ steps.bump.outputs.new_tag }}"
-
-  # Stage 4: Tag container image with version
-  retag:
-    name: Tag Image
-    needs: [build, tag]
-    if: github.ref == 'refs/heads/main' && needs.tag.result == 'success'
-    runs-on: ubuntu-latest
+  # Stage 3: Build, scan, and push container image
+  build:
+    name: Build & Push
+    needs: [pre-commit, version]
+    if: |
+      always() &&
+      needs.pre-commit.result == 'success' &&
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    uses: daniel-butler-irl/CoinNode/.github/workflows/build.yml@v0.2.0
     permissions:
+      contents: read
       packages: write
-    steps:
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Tag image with version
-        env:
-          IMAGE: ghcr.io/daniel-butler-irl/coinnode
-          DIGEST: ${{ needs.build.outputs.digest }}
-          VERSION: ${{ needs.tag.outputs.new_tag }}
-        run: |
-          echo "Tagging ${IMAGE}@${DIGEST} as ${IMAGE}:${VERSION}"
-          docker buildx imagetools create \
-            --tag "${IMAGE}:${VERSION}" \
-            "${IMAGE}@${DIGEST}"
-          echo "Successfully tagged image with ${VERSION}"
-
-  # Stage 5: Create release
-  release:
-    name: Release
-    needs: [build, tag, retag]
-    if: always() && !failure() && !cancelled() && needs.retag.result == 'success'
-    uses: daniel-butler-irl/CoinNode/.github/workflows/release.yml@v0.2.0
-    permissions:
-      contents: write
-      attestations: write
       id-token: write
+      attestations: write
+      security-events: write
+      actions: read
     with:
       image_name: daniel-butler-irl/coinnode
-      tag: ${{ needs.tag.outputs.new_tag }}
+      version: ${{ needs.version.outputs.new_tag }}
 
-  # Stage 6: Deploy and verify in ephemeral Kind cluster
+  # Stage 4: Create release (creates git tag via GitHub API)
+  release:
+    name: Release
+    needs: [build, version]
+    if: github.ref == 'refs/heads/main' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.new_tag }}
+        run: |
+          echo "Creating release ${VERSION}"
+          gh release create "${VERSION}" \
+            --title "${VERSION}" \
+            --generate-notes
+
+  # Stage 5: Deploy and verify in ephemeral Kind cluster
   deploy-test:
     name: Deploy & Verify
-    needs: [release, tag, retag]
-    if: always() && !failure() && !cancelled() && needs.release.result == 'success'
+    needs: [release, version]
+    if: needs.release.result == 'success'
     uses: daniel-butler-irl/CoinNode/.github/workflows/cd-kind.yml@v0.2.0
     permissions:
       contents: read
       packages: read
     with:
-      version: ${{ needs.tag.outputs.new_tag }}
+      version: ${{ needs.version.outputs.new_tag }}
       verification_duration: 5
