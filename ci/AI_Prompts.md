@@ -1,6 +1,6 @@
 # Prompts
 
-> design a ci workflow for GHA put the actual workflows in CI directory and point to them. Use minimal secure actions prefering first parties like github. first stage should be to run the precommit incase a developer sikpped it locally. Then build, scan and push the image to ghcr and create a release. Sign all artifacts and consider security as a high priority.
+> design a ci workflow for GHA put the actual workflows in CI directory and point to them. Use minimal secure actions prefering first parties like github. first stage should be to run the precommit in case a developer skipped it locally. Then build, scan and push the image to ghcr and create a release. Sign all artifacts and consider security as a high priority.
 
 **AI PLAN**
 

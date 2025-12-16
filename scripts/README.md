@@ -1,47 +1,27 @@
 # Scripts
 
-Utility scripts for CoinNode operations.
+This directory contains utility scripts for development and operational tasks. Both shell and Python implementations are provided for the log analysis tool.
 
-## Directory Structure
+The shell script handles blank and malformed lines gracefully by filtering with awk. Only lines that start with a timestamp bracket and have at least two fields are processed, so malformed input does not affect the counts.
 
-```
-scripts/
-├── sample.log      # Sample log file for testing
-├── shell/          # Shell scripts
-│   └── log-ip-freq.sh
-└── python/         # Python scripts (managed with uv)
-    └── log_ip_freq.py
-```
+For the Python CLI tool, I chose Click over argparse. Click provides a simpler and more readable way to define command-line interfaces, with decorators that make the intent clear and reduce boilerplate. Unit tests are included for the aggregator function and CLI interface.
 
-## Shell Scripts
+See [python/README.md](python/README.md) for Python setup and usage instructions.
 
 See [shell/README.md](shell/README.md) for shell script documentation.
 
-## Python Scripts
+### Log IP Frequency Analyzer
 
-See [python/README.md](python/README.md) for Python script documentation and setup instructions.
-
-## Log IP Frequency Analyzer
-
-Both shell and Python implementations parse web logs and output IP address frequency counts sorted descending.
-
-### Usage
+Parses web logs and outputs IP address frequency counts sorted descending.
 
 Shell:
+
 ```sh
 ./scripts/shell/log-ip-freq.sh scripts/sample.log
 ```
 
 Python:
+
 ```sh
 cd scripts/python && uv run log-ip-freq --file ../sample.log
-```
-
-### Expected Output
-
-```
-6 192.168.22.11
-4 10.32.89.34
-2 172.32.9.12
-1 121.89.25.43
 ```
