@@ -1,6 +1,10 @@
-# IAM Assumable Role
+# Terraform
 
-Terraform configuration for creating IAM resources that allow identities in the same AWS account to assume a role.
+This configuration provisions IAM resources that allow identities in the same AWS account to assume a role. It creates a role, a policy granting the ability to assume that role, a group with the policy attached, and optionally a user added to the group.
+
+I added postconditions and check blocks to validate the infrastructure after it is created. Postconditions verify that resources have the expected properties, such as correct ARN formats and paths. Check blocks provide continuous validation that runs on every plan and apply. These go beyond the basic requirements and catch configuration drift or unexpected state.
+
+I included Terratest to prove idempotency. The tests verify that apply creates the expected resources, destroy removes them cleanly, and applying twice in a row results in no changes. This provides confidence that the configuration behaves correctly and does not have hidden side effects.
 
 ## Resources Created
 
@@ -50,13 +54,13 @@ tags = {
 | Name | Version |
 |------|---------|
 | terraform | >= 1.5 |
-| aws | ~> 5.0 |
+| aws | ~> 6.26 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| aws | 5.100.0 |
+| aws | 6.26.0 |
 
 ## Inputs
 
