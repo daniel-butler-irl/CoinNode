@@ -1,0 +1,71 @@
+formatter: markdown table
+
+version: ">= 0.18.0"
+
+recursive:
+  enabled: false
+
+sections:
+  hide: []
+  show: []
+
+content: |-
+  ## Usage
+
+  ```hcl
+  # Configure variables in terraform.tfvars
+  base_name   = "my-application"
+  create_user = false
+
+  tags = {
+    Project     = "my-project"
+    Environment = "dev"
+  }
+  ```
+
+  {{ .Requirements }}
+
+  {{ .Providers }}
+
+  {{ .Inputs }}
+
+  {{ .Outputs }}
+
+  ## Testing
+
+  This configuration includes Terratest-based Go tests for provisioning and idempotency validation.
+
+  ```bash
+  cd terraform/test
+  go test -v -timeout 30m
+  ```
+
+output:
+  file: README.md
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
+    {{ .Content }}
+    <!-- END_TF_DOCS -->
+
+output-values:
+  enabled: false
+
+sort:
+  enabled: true
+  by: required
+
+settings:
+  anchor: false
+  color: false
+  default: true
+  description: true
+  escape: true
+  hide-empty: false
+  html: false
+  indent: 2
+  lockfile: true
+  read-comments: true
+  required: true
+  sensitive: true
+  type: true

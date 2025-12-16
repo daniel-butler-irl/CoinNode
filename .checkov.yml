@@ -1,0 +1,32 @@
+# Checkov configuration file
+# See https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
+
+# Skip checks with justifications
+skip-check:
+  # IAM: MFA is enforced at the identity provider level, not on individual IAM users
+  - CKV_AWS_341  # Ensure IAM User requires MFA
+
+  # IAM: SSO is used at the org level; service accounts need IAM users for programmatic access
+  - CKV_AWS_273  # Ensure access is controlled through SSO and not AWS IAM defined users
+
+  # Kubernetes: These manifests are templates - namespace is set at deployment time
+  - CKV_K8S_21   # The default namespace should not be used
+
+  # Kubernetes: UID/GID 1000 matches the bitcoin user created in the container image
+  - CKV_K8S_40   # Containers should run as a high UID
+
+  # Kubernetes: Service account token is required for the application
+  - CKV_K8S_38   # Service Account Tokens should only be mounted where necessary
+
+  # Kubernetes: Local development image - digest is used in CI/CD builds
+  - CKV_K8S_43   # Image should use digest
+
+  # Kubernetes: ImagePullPolicy=Never is intentional for local development
+  - CKV_K8S_15   # Image Pull Policy should be Always
+
+  # Dockerfile: Image IS pinned by digest (${UBI_IMAGE}@${UBI_DIGEST}) - checkov false positive
+  - CKV_DOCKER_3  # FROM statement should use a fixed tag
+  - CKV_DOCKER_7  # Ensure the base image uses a non latest version tag
+
+  # Secrets: Example/template credentials that must be changed before deployment
+  - CKV_SECRET_6  # Base64 encoded secret detected

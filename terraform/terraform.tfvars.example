@@ -1,0 +1,12 @@
+# Required
+base_name = "coinnode"
+
+# Optional
+create_user = true
+path        = "/coinnode/"
+
+tags = {
+  Project     = "coinnode"
+  Environment = "test"
+  ManagedBy   = "terraform"
+}

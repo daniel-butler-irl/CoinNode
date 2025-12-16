@@ -28,10 +28,13 @@ repos:
       - id: terraform_fmt
       - id: terraform_validate
         # only scan directories which has provider config in them due to limitation https://github.com/hashicorp/terraform/issues/28490
-        files: ^examples/|^patterns/|^solutions/
+        files: ^terraform/|^examples/|^patterns/|^solutions/
         args:
           - --hook-config=--retry-once-with-cleanup=true
           - --tf-init-args=-upgrade
+      - id: terraform_docs
+        args:
+          - --args=--config=.terraform-docs.yml
       - id: terraform_tflint
         args:
           - --args=--enable-rule=terraform_unused_declarations
@@ -62,6 +65,11 @@ repos:
           - --args=--skip-files="**/scripts/*.yaml"
           - --args=--skip-files="**/tests/**/*"
           - --args=--skip-files="common-dev-assets/**/*"
+          # skip terraform state files
+          - --args=--skip-files="**/*.tfstate"
+          - --args=--skip-files="**/*.tfstate.*"
+          # use trivyignore file for false positives
+          - --args=--ignorefile=.trivyignore
           # workaround for https://github.com/antonbabenko/pre-commit-terraform/issues/691
           - --hook-config=--parallelism-limit=1
   # checkov (does not require checkov to be installed locally to run)
@@ -69,6 +77,8 @@ repos:
     rev: 3.2.495
     hooks:
       - id: checkov
+        args:
+          - --config-file=.checkov.yml
   - repo: https://github.com/syntaqx/git-hooks
     rev: v0.0.18
     hooks:
@@ -98,3 +108,24 @@ repos:
     rev: v1.7.4
     hooks:
       - id: actionlint
+  # Go hooks
+  - repo: local
+    hooks:
+      - id: go-fmt
+        name: go fmt
+        entry: bash -c 'cd terraform/test && go fmt ./...'
+        language: system
+        files: \.go$
+        pass_filenames: false
+      - id: go-vet
+        name: go vet
+        entry: bash -c 'cd terraform/test && go vet ./...'
+        language: system
+        files: \.go$
+        pass_filenames: false
+      - id: go-mod-tidy
+        name: go mod tidy
+        entry: bash -c 'cd terraform/test && go mod tidy'
+        language: system
+        files: (\.go$|go\.mod$|go\.sum$)
+        pass_filenames: false

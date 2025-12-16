@@ -11,3 +11,17 @@ The runtime container is configured to run as a non-root user with a dedicated U
 A container health check is included to verify that the node is responsive via bitcoin-cli using local RPC access. This checks real application health rather than just process existence, and allows the orchestrator to distinguish between a running but unhealthy node and a healthy one. The health check is intentionally lightweight and does not depend on full chain synchronisation, ensuring that startup and recovery are not unnecessarily delayed.
 
 Overall, the Docker image prioritises supply-chain integrity, minimal runtime surface, and operational clarity, while remaining practical to build, debug, and maintain.
+
+### Build and Run container
+
+Build the image:
+
+```sh
+docker build -t bitcoin-core:29.0 docker/
+```
+
+Run a quick sanity check in regtest mode (private, local-only network):
+
+```sh
+docker run --rm -e BITCOIN_NETWORK=regtest bitcoin-core:29.0
+```

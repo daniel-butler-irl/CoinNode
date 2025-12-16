@@ -14,6 +14,7 @@ ARG UBI_DIGEST=sha256:6fc28bcb6776e387d7a35a2056d9d2b985dc4e26031e98a2bd35a7137c
 # =============================================================================
 # Stage 1: Download and Verify Bitcoin Core
 # =============================================================================
+# trivy:ignore:AVD-DS-0001 Image is pinned by digest which is more secure than a tag
 FROM ${UBI_IMAGE}@${UBI_DIGEST} AS verifier
 
 ARG BITCOIN_VERSION=29.0
@@ -77,6 +78,7 @@ RUN set -eux; \
 # =============================================================================
 ARG UBI_IMAGE
 ARG UBI_DIGEST
+# trivy:ignore:AVD-DS-0001 Image is pinned by digest which is more secure than a tag
 FROM ${UBI_IMAGE}@${UBI_DIGEST} AS preparer
 
 COPY --from=verifier /tmp/bitcoin/bitcoin /tmp/bitcoin
@@ -92,6 +94,7 @@ RUN mkdir -p /opt/bitcoin/bin && \
 # =============================================================================
 ARG UBI_IMAGE
 ARG UBI_DIGEST
+# trivy:ignore:AVD-DS-0001 Image is pinned by digest which is more secure than a tag
 FROM ${UBI_IMAGE}@${UBI_DIGEST} AS runtime
 
 ARG BITCOIN_UID=1000

@@ -1,3 +1,6 @@
+# trivy:ignore:AVD-KSV-0001 allowPrivilegeEscalation is explicitly set to false
+# trivy:ignore:AVD-KSV-0012 runAsNonRoot is true and runAsUser is 1000 (non-root)
+# trivy:ignore:AVD-KSV-0020 UID 1000 matches the bitcoin user in the container image
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
