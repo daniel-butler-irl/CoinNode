@@ -33,11 +33,11 @@ on:
       upload_sarif:
         description: 'Upload scan results to GitHub Security tab (requires public repo or GHAS)'
         type: boolean
-        default: false
+        default: true
       attest:
         description: 'Create build provenance attestation (requires public repo or GitHub Enterprise)'
         type: boolean
-        default: false
+        default: true
     outputs:
       digest:
         description: 'Image digest'
