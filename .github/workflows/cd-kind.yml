@@ -109,10 +109,10 @@ jobs:
           IMAGE="${REGISTRY}/${IMAGE_NAME}:${{ inputs.version }}"
 
           sed -i "s|image: bitcoin-node:local|image: ${IMAGE}|" \
-            orchestration/statefulset.yaml
+            orchestration/deployment.yaml
 
-          echo "=== Patched StatefulSet ==="
-          grep -A2 "image:" orchestration/statefulset.yaml
+          echo "=== Patched Deployment ==="
+          grep -A2 "image:" orchestration/deployment.yaml
 
       - name: Deploy manifests
         run: |
@@ -124,16 +124,16 @@ jobs:
 
       - name: Wait for rollout
         run: |
-          echo "Waiting for StatefulSet rollout..."
-          kubectl rollout status statefulset/bitcoin-node --timeout=300s
+          echo "Waiting for Deployment rollout..."
+          kubectl rollout status deployment/bitcoin-node --timeout=300s
 
       - name: Verify pod readiness
         run: |
           echo "Waiting for pod to be ready..."
-          kubectl wait --for=condition=Ready pod/bitcoin-node-0 --timeout=180s
+          kubectl wait --for=condition=Ready pod -l app=bitcoin-node --timeout=180s
 
           echo "=== Pod Status ==="
-          kubectl get pod bitcoin-node-0 -o wide
+          kubectl get pod -l app=bitcoin-node -o wide
 
       - name: Run active verification
         run: |
@@ -142,6 +142,10 @@ jobs:
           CHECK_INTERVAL=30
           CHECK_COUNT=0
           FAILED_CHECKS=0
+
+          # Get pod name (Deployment pods have random suffixes)
+          POD_NAME=$(kubectl get pod -l app=bitcoin-node -o jsonpath='{.items[0].metadata.name}')
+          echo "Monitoring pod: ${POD_NAME}"
 
           echo "Starting ${{ inputs.verification_duration }}-minute verification window"
           echo "End time: $(date -d @${END_TIME} 2>/dev/null || date -r ${END_TIME})"
@@ -152,7 +156,7 @@ jobs:
             echo "=== Health check #${CHECK_COUNT} at $(date) ==="
 
             # Check 1: Pod status
-            POD_PHASE=$(kubectl get pod bitcoin-node-0 -o jsonpath='{.status.phase}')
+            POD_PHASE=$(kubectl get pod "${POD_NAME}" -o jsonpath='{.status.phase}')
             echo "Pod phase: ${POD_PHASE}"
             if [ "$POD_PHASE" != "Running" ]; then
               echo "ERROR: Pod phase is ${POD_PHASE}, expected Running"
@@ -160,7 +164,7 @@ jobs:
             fi
 
             # Check 2: Container ready
-            READY=$(kubectl get pod bitcoin-node-0 -o jsonpath='{.status.containerStatuses[0].ready}')
+            READY=$(kubectl get pod "${POD_NAME}" -o jsonpath='{.status.containerStatuses[0].ready}')
             echo "Container ready: ${READY}"
             if [ "$READY" != "true" ]; then
               echo "ERROR: Container not ready"
@@ -168,7 +172,7 @@ jobs:
             fi
 
             # Check 3: Restart count
-            RESTARTS=$(kubectl get pod bitcoin-node-0 -o jsonpath='{.status.containerStatuses[0].restartCount}')
+            RESTARTS=$(kubectl get pod "${POD_NAME}" -o jsonpath='{.status.containerStatuses[0].restartCount}')
             echo "Restart count: ${RESTARTS}"
             if [ "$RESTARTS" -gt 0 ]; then
               echo "WARNING: Container has restarted ${RESTARTS} times"
@@ -176,8 +180,8 @@ jobs:
 
             # Check 4: RPC health check
             echo "Running RPC health check..."
-            if kubectl exec bitcoin-node-0 -- \
-              bitcoin-cli -regtest -datadir=/home/bitcoin/.bitcoin getblockchaininfo > /tmp/blockchain-info.json 2>&1; then
+            if kubectl exec "${POD_NAME}" -- \
+              bitcoin-cli -regtest -datadir=/var/lib/bitcoin -conf=/etc/bitcoin/bitcoin.conf getblockchaininfo > /tmp/blockchain-info.json 2>&1; then
               echo "RPC health check: PASSED"
               cat /tmp/blockchain-info.json
             else
@@ -212,11 +216,11 @@ jobs:
 
           echo ""
           echo "=== Pod Description ==="
-          kubectl describe pod bitcoin-node-0 || true
+          kubectl describe pod -l app=bitcoin-node || true
 
           echo ""
           echo "=== Pod Logs ==="
-          kubectl logs bitcoin-node-0 --tail=200 || true
+          kubectl logs -l app=bitcoin-node --tail=200 || true
 
           echo ""
           echo "=== Events ==="

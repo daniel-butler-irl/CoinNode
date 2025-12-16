@@ -1,5 +1,10 @@
 # Prompts
 
+> **Note**: This file documents the initial AI planning prompts. The implementation has since evolved:
+> - Changed from StatefulSet to Deployment (Bitcoin nodes cannot share blockchain data, so StatefulSet's scaling features provide no benefit for single-replica deployments)
+> - Config location changed from `/home/bitcoin/.bitcoin/bitcoin.conf` to `/etc/bitcoin/bitcoin.conf`
+> - Data directory changed to `/var/lib/bitcoin`
+
 > create kubernetes manifests to deploy the bitcoin node container to kubernetes. use a statefulset for blockchain data persistence with proper health checks using bitcoin-cli. include security hardening with network policies, pod disruption budget, and run as non-root user with read-only filesystem. configure for regtest network for development. include configmap for bitcoin.conf, secret for rpc credentials, and a serviceaccount with disabled token mounting.
 
 **AI PLAN**

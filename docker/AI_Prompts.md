@@ -1,5 +1,9 @@
 # Prompts
 
+> **Note**: This file documents the initial AI planning prompts. The implementation has since evolved:
+> - Data directory changed from `/home/bitcoin/.bitcoin` to `/var/lib/bitcoin`
+> - Config file location changed to `/etc/bitcoin/bitcoin.conf` (separate from data)
+
 > in the docker directory create a docker file to containerize Bitcoin Core 29.0 node from official source. base it on a ubi minial image with security and reliablity in mind, such as running as non root user. Include an entry point to start the node and output the logs to stdout/stderr.
 
 **AI PLAN**

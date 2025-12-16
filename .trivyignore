@@ -1,7 +1,7 @@
 # Ignore MFA requirement for IAM groups - role assumption uses MFA in identity provider
 AVD-AWS-0123
 
-# Kubernetes StatefulSet false positives - security context is properly configured
+# Kubernetes Deployment false positives - security context is properly configured
 # UID/GID 1000 matches the bitcoin user in the container image
 AVD-KSV-0001
 AVD-KSV-0012

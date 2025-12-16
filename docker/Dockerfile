@@ -111,8 +111,8 @@ LABEL maintainer="CoinNode Project" \
 # Using direct passwd/group file manipulation for minimal footprint
 RUN echo "bitcoin:x:${BITCOIN_UID}:${BITCOIN_GID}:Bitcoin Daemon User:/home/bitcoin:/sbin/nologin" >> /etc/passwd && \
     echo "bitcoin:x:${BITCOIN_GID}:" >> /etc/group && \
-    mkdir -p /home/bitcoin/.bitcoin && \
-    chown -R ${BITCOIN_UID}:${BITCOIN_GID} /home/bitcoin
+    mkdir -p /var/lib/bitcoin /etc/bitcoin /home/bitcoin && \
+    chown -R ${BITCOIN_UID}:${BITCOIN_GID} /var/lib/bitcoin /etc/bitcoin /home/bitcoin
 
 # Copy binaries from preparer stage
 COPY --from=preparer --chown=root:root /opt/bitcoin/bin/ /opt/bitcoin/bin/
@@ -123,7 +123,8 @@ COPY --chown=root:root entrypoint.sh /entrypoint.sh
 RUN chmod 755 /entrypoint.sh
 
 # Environment variables
-ENV BITCOIN_DATA=/home/bitcoin/.bitcoin \
+ENV BITCOIN_DATA=/var/lib/bitcoin \
+    BITCOIN_CONF=/etc/bitcoin/bitcoin.conf \
     BITCOIN_NETWORK=mainnet \
     PATH="/opt/bitcoin/bin:${PATH}"
 
@@ -132,7 +133,7 @@ USER bitcoin
 WORKDIR /home/bitcoin
 
 # Data volume for blockchain persistence
-VOLUME ["/home/bitcoin/.bitcoin"]
+VOLUME ["/var/lib/bitcoin"]
 
 # Expose ports for all networks
 # Mainnet: P2P (8333), RPC (8332)
@@ -143,6 +144,6 @@ EXPOSE 8332 8333 18332 18333 18443 18444 38332 38333
 
 # Health check - verifies bitcoind is responding
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD /bin/sh -ec 'FLAG=""; case "${BITCOIN_NETWORK:-mainnet}" in testnet) FLAG="-testnet";; regtest) FLAG="-regtest";; signet) FLAG="-signet";; esac; bitcoin-cli -datadir="${BITCOIN_DATA:-/home/bitcoin/.bitcoin}" ${FLAG} getblockchaininfo >/dev/null'
+    CMD /bin/sh -ec 'FLAG=""; case "${BITCOIN_NETWORK:-mainnet}" in testnet) FLAG="-testnet";; regtest) FLAG="-regtest";; signet) FLAG="-signet";; esac; bitcoin-cli -datadir="${BITCOIN_DATA:-/var/lib/bitcoin}" -conf="${BITCOIN_CONF:-/etc/bitcoin/bitcoin.conf}" ${FLAG} getblockchaininfo >/dev/null'
 
 ENTRYPOINT ["/entrypoint.sh"]

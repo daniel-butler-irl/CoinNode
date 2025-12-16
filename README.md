@@ -67,7 +67,7 @@ kubectl apply -f orchestration/
 Verify deployment:
 
 ```sh
-kubectl rollout status statefulset/bitcoin-node --timeout=300s
+kubectl rollout status deployment/bitcoin-node --timeout=300s
 kubectl get pods -l app=bitcoin-node
 kubectl logs -l app=bitcoin-node
 ```
@@ -75,7 +75,7 @@ kubectl logs -l app=bitcoin-node
 Test RPC connectivity:
 
 ```sh
-kubectl exec -it bitcoin-node-0 -- bitcoin-cli -regtest -datadir=/home/bitcoin/.bitcoin getblockchaininfo
+kubectl exec -it deploy/bitcoin-node -- bitcoin-cli -regtest -datadir=/var/lib/bitcoin -conf=/etc/bitcoin/bitcoin.conf getblockchaininfo
 ```
 
 ## Log Analysis Tools
@@ -137,7 +137,7 @@ See [terraform/README.md](terraform/README.md) for detailed inputs and outputs.
 
 - **Network mode**: Configured for regtest (private local network), not mainnet
 - **Storage**: 1Gi PVC suitable for regtest; mainnet requires 500Gi+
-- **Data directory**: `/home/bitcoin/.bitcoin` (cloud-native design, data and config colocated)
+- **Data directory**: `/var/lib/bitcoin` (data), `/etc/bitcoin/bitcoin.conf` (config)
 - **Storage class**: PVC uses cluster default (set explicitly for production)
 - **RPC credentials**: Placeholder values in secret.yaml; replace for production
 - **CI/CD location**: Workflows are in `.github/workflows/` (required by GitHub Actions) rather than `/ci/`; the `/ci/` directory contains documentation only
@@ -177,5 +177,5 @@ pre-commit run --all-files
 - [Bitcoin Core](https://github.com/bitcoin/bitcoin)
 - [Red Hat UBI Images](https://catalog.redhat.com/software/containers/ubi9/ubi-minimal)
 - [Trivy Scanner](https://github.com/aquasecurity/trivy)
-- [Kubernetes StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+- [Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 - [AWS Terraform Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)

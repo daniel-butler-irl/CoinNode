@@ -2,13 +2,12 @@
 # trivy:ignore:AVD-KSV-0012 runAsNonRoot is true and runAsUser is 1000 (non-root)
 # trivy:ignore:AVD-KSV-0020 UID 1000 matches the bitcoin user in the container image
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: bitcoin-node
   labels:
     app: bitcoin-node
 spec:
-  serviceName: bitcoin-node-headless
   replicas: 1
   selector:
     matchLabels:
@@ -46,7 +45,9 @@ spec:
             - name: BITCOIN_NETWORK
               value: regtest
             - name: BITCOIN_DATA
-              value: /home/bitcoin/.bitcoin
+              value: /var/lib/bitcoin
+            - name: BITCOIN_CONF
+              value: /etc/bitcoin/bitcoin.conf
           ports:
             - name: rpc
               containerPort: 18443
@@ -59,7 +60,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - bitcoin-cli -regtest -datadir=/home/bitcoin/.bitcoin getblockchaininfo > /dev/null
+                - bitcoin-cli -regtest -datadir=/var/lib/bitcoin -conf=/etc/bitcoin/bitcoin.conf getblockchaininfo > /dev/null
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 10
@@ -69,7 +70,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - bitcoin-cli -regtest -datadir=/home/bitcoin/.bitcoin getblockchaininfo > /dev/null
+                - bitcoin-cli -regtest -datadir=/var/lib/bitcoin -conf=/etc/bitcoin/bitcoin.conf getblockchaininfo > /dev/null
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10
@@ -83,9 +84,9 @@ spec:
               cpu: "1"
           volumeMounts:
             - name: data
-              mountPath: /home/bitcoin/.bitcoin
+              mountPath: /var/lib/bitcoin
             - name: config
-              mountPath: /home/bitcoin/.bitcoin/bitcoin.conf
+              mountPath: /etc/bitcoin/bitcoin.conf
               subPath: bitcoin.conf
               readOnly: true
             - name: tmp

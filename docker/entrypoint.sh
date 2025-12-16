@@ -5,7 +5,8 @@
 # =============================================================================
 set -e
 
-BITCOIN_DATA="${BITCOIN_DATA:-/home/bitcoin/.bitcoin}"
+BITCOIN_DATA="${BITCOIN_DATA:-/var/lib/bitcoin}"
+BITCOIN_CONF="${BITCOIN_CONF:-/etc/bitcoin/bitcoin.conf}"
 BITCOIN_NETWORK="${BITCOIN_NETWORK:-mainnet}"
 
 # -----------------------------------------------------------------------------
@@ -17,7 +18,7 @@ shutdown_handler() {
     echo "[entrypoint] Received shutdown signal"
     if [ -n "${BITCOIND_PID:-}" ] && kill -0 "$BITCOIND_PID" 2>/dev/null; then
         echo "[entrypoint] Stopping bitcoind gracefully via bitcoin-cli..."
-        bitcoin-cli -datadir="${BITCOIN_DATA}" "${NETWORK_FLAG:-}" stop 2>/dev/null || true
+        bitcoin-cli -datadir="${BITCOIN_DATA}" -conf="${BITCOIN_CONF}" "${NETWORK_FLAG:-}" stop 2>/dev/null || true
         echo "[entrypoint] Waiting for bitcoind to exit..."
         wait "$BITCOIND_PID" 2>/dev/null || true
     fi
@@ -54,9 +55,9 @@ esac
 # Build bitcoind arguments
 # -----------------------------------------------------------------------------
 if [ -n "${NETWORK_FLAG}" ]; then
-    set -- "-datadir=${BITCOIN_DATA}" "-printtoconsole" "${NETWORK_FLAG}" "$@"
+    set -- "-datadir=${BITCOIN_DATA}" "-conf=${BITCOIN_CONF}" "-printtoconsole" "${NETWORK_FLAG}" "$@"
 else
-    set -- "-datadir=${BITCOIN_DATA}" "-printtoconsole" "$@"
+    set -- "-datadir=${BITCOIN_DATA}" "-conf=${BITCOIN_CONF}" "-printtoconsole" "$@"
 fi
 
 echo "[entrypoint] Starting bitcoind with args: $*"
