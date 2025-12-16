@@ -30,3 +30,6 @@ skip-check:
 
   # Secrets: Example/template credentials that must be changed before deployment
   - CKV_SECRET_6  # Base64 encoded secret detected
+
+  # GitHub Actions: CD workflow requires inputs to specify deployment version - not a build workflow
+  - CKV_GHA_7     # workflow_dispatch inputs MUST be empty
