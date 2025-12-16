@@ -54,7 +54,7 @@ jobs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up QEMU (multi-arch)
         uses: docker/setup-qemu-action@v3
@@ -124,7 +124,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Trivy (table output for logs)
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: ${{ inputs.registry }}/${{ inputs.image_name }}@${{ needs.build.outputs.digest }}
           format: 'table'
@@ -133,7 +133,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Run Trivy (SARIF for GitHub Security)
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: ${{ inputs.registry }}/${{ inputs.image_name }}@${{ needs.build.outputs.digest }}
           format: 'sarif'
@@ -177,7 +177,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-name: ${{ inputs.registry }}/${{ inputs.image_name }}
           subject-digest: ${{ needs.build.outputs.digest }}
