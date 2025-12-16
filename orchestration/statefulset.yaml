@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bitcoin-node
+  labels:
+    app: bitcoin-node
+spec:
+  serviceName: bitcoin-node-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bitcoin-node
+  template:
+    metadata:
+      labels:
+        app: bitcoin-node
+    spec:
+      serviceAccountName: bitcoin-node
+      terminationGracePeriodSeconds: 600
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bitcoind
+          image: bitcoin-node:local
+          imagePullPolicy: Never
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: BITCOIN_NETWORK
+              value: regtest
+            - name: BITCOIN_DATA
+              value: /home/bitcoin/.bitcoin
+          ports:
+            - name: rpc
+              containerPort: 18443
+              protocol: TCP
+            - name: p2p
+              containerPort: 18444
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - bitcoin-cli -regtest -datadir=/home/bitcoin/.bitcoin getblockchaininfo > /dev/null
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - bitcoin-cli -regtest -datadir=/home/bitcoin/.bitcoin getblockchaininfo > /dev/null
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: "1"
+          volumeMounts:
+            - name: data
+              mountPath: /home/bitcoin/.bitcoin
+            - name: config
+              mountPath: /home/bitcoin/.bitcoin/bitcoin.conf
+              subPath: bitcoin.conf
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: bitcoin-node-data
+        - name: config
+          configMap:
+            name: bitcoin-node-config
+        - name: tmp
+          emptyDir:
+            sizeLimit: 100Mi

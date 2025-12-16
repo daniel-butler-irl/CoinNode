@@ -3,7 +3,7 @@
 Sample Bitcoin Node Deployment
 
 - Containerized Bitcoin Core 29.0 node
-- Wrap in Helm to deploy to K8S
+- Vanilla manifets for deploy to K8S
 - CICD in GHA
 - Log analisis with shell script and python
 
