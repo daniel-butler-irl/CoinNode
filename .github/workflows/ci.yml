@@ -16,7 +16,7 @@ jobs:
   # Stage 1: Run pre-commit hooks (catches skipped local checks)
   pre-commit:
     name: Pre-commit Checks
-    uses: daniel-butler-irl/CoinNode/.github/workflows/pre-commit.yml@v0.2.0
+    uses: daniel-butler-irl/CoinNode/.github/workflows/pre-commit.yml@main
     permissions:
       contents: read
 
@@ -97,7 +97,7 @@ jobs:
       needs.pre-commit.result == 'success' &&
       github.event_name == 'push' &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-    uses: daniel-butler-irl/CoinNode/.github/workflows/build.yml@v0.2.0
+    uses: daniel-butler-irl/CoinNode/.github/workflows/build.yml@main
     permissions:
       contents: read
       packages: write
@@ -136,7 +136,7 @@ jobs:
     name: Deploy & Verify
     needs: [release, version]
     if: needs.release.result == 'success'
-    uses: daniel-butler-irl/CoinNode/.github/workflows/cd-kind.yml@v0.2.0
+    uses: daniel-butler-irl/CoinNode/.github/workflows/cd-kind.yml@main
     permissions:
       contents: read
       packages: read
