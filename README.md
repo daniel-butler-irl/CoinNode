@@ -175,7 +175,6 @@ pre-commit run --all-files
 ## References
 
 - [Bitcoin Core](https://github.com/bitcoin/bitcoin)
-- [Red Hat UBI Images](https://catalog.redhat.com/software/containers/ubi9/ubi-minimal)
+- [Red Hat UBI Images](https://catalog.redhat.com/en/software/containers/ubi9-minimal/61832888c0d15aff4912fe0d)
 - [Trivy Scanner](https://github.com/aquasecurity/trivy)
-- [Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 - [AWS Terraform Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
