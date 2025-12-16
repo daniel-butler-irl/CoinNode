@@ -31,7 +31,6 @@ repos:
         files: ^terraform/|^examples/|^patterns/|^solutions/
         args:
           - --hook-config=--retry-once-with-cleanup=true
-          - --tf-init-args=-upgrade
       - id: terraform_docs
         args:
           - --args=--config=.terraform-docs.yml

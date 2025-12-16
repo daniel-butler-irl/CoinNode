@@ -10,6 +10,14 @@ AVD-KSV-0021
 AVD-KSV-0106
 # Namespace is set at deployment time via kubectl apply -n or kustomization
 AVD-KSV-0110
+# Image uses local name for local development/testing with imagePullPolicy: Never
+AVD-KSV-0032
+AVD-KSV-0033
+AVD-KSV-0034
+AVD-KSV-0035
+
+# Dockerfile uses digest (@sha256) which is more secure than tags - false positive
+AVD-DS-0001
 
 # IAM policy uses account root principal intentionally for assumable role pattern
 AVD-AWS-0086
