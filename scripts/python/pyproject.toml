@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "log-ip-freq"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["click"]
+
+[tool.uv]
+package = true
+dev-dependencies = ["pytest", "ruff"]
+
+[project.scripts]
+log-ip-freq = "log_ip_freq:main"

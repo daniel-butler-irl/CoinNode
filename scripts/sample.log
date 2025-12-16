@@ -1,0 +1,16 @@
+[29/Sep/2021:10:20:48+0100] 192.168.22.11 /healthz GET Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+[29/Sep/2021:10:20:49+0100] 10.32.89.34 /api/status GET curl/7.68.0
+[29/Sep/2021:10:20:50+0100] 192.168.22.11 /healthz GET Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+[29/Sep/2021:10:20:51+0100] 192.168.22.11 /api/blocks GET Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+[29/Sep/2021:10:20:52+0100] 172.32.9.12 /healthz GET kube-probe/1.21
+
+[29/Sep/2021:10:20:53+0100] 10.32.89.34 /api/info GET curl/7.68.0
+[29/Sep/2021:10:20:54+0100] 192.168.22.11 /metrics GET prometheus/2.30.0
+malformed line without proper format
+[29/Sep/2021:10:20:55+0100] 121.89.25.43 /api/peers GET python-requests/2.26.0
+[29/Sep/2021:10:20:56+0100] 192.168.22.11 /healthz GET Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+
+[29/Sep/2021:10:20:57+0100] 10.32.89.34 /api/mempool GET curl/7.68.0
+[29/Sep/2021:10:20:58+0100] 172.32.9.12 /healthz GET kube-probe/1.21
+[29/Sep/2021:10:20:59+0100] 192.168.22.11 /api/blocks/latest GET Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+[29/Sep/2021:10:21:00+0100] 10.32.89.34 /healthz GET curl/7.68.0
