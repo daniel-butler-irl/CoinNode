@@ -6,9 +6,9 @@ This directory contains Kubernetes manifests for deploying the Bitcoin node. The
 
 The initial implementation used a StatefulSet, but this was changed to a Deployment for the following reasons:
 
-- **No horizontal scaling benefit**: Bitcoin nodes cannot share blockchain data. Each node requires its own complete copy of the blockchain, so StatefulSet's stable pod identity and ordered scaling provide no advantage.
+- **No scaling planned:** This deployment is single-replica by design. Bitcoin nodes each require their own full blockchain copy, and we have no requirement for multiple replicas. StatefulSet's per-pod volume provisioning and ordered scaling are therefore unused.
 - **Single replica**: With `replicas: 1`, StatefulSet features like stable network identity (`bitcoin-node-0`) and ordered deployment are unnecessary.
-- **Simpler architecture**: A Deployment with a standalone PVC provides identical persistence guarantees with less complexity.
+- **Simpler architecture**: A Deployment with a standalone PVC and `Recreate` strategy provides identical persistence guarantees with a more conventional pattern.
 - **Spec alignment**: The requirements suggest "Use Deployment (or StatefulSet if you justify persistence needs)" - a Deployment is the expected default.
 
 ## Security Hardening
